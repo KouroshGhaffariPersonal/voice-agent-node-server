@@ -23,15 +23,25 @@ app.get("/", (req, res) => {
 
 app.get("/test-openai", async (req, res) => {
   try {
-    const response = await openai.createCompletion({
-      model: "text-davinci-003",
-      prompt: "Hello, OpenAI!",
-      max_tokens: 5,
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error("OpenAI API key is not configured");
+    }
+
+    const completion = await openai.chat.completions.create({
+      messages: [{ role: "system", content: "Hello! This is a test." }],
+      model: "gpt-3.5-turbo",
     });
-    res.json(response.data);
+
+    res.json({
+      status: "success",
+      data: completion.choices[0].message,
+    });
   } catch (error) {
-    console.error(error);
-    res.status(500).send("Error communicating with OpenAI");
+    console.error("OpenAI Error:", error);
+    res.status(500).json({
+      status: "error",
+      message: error.message || "Error communicating with OpenAI",
+    });
   }
 });
 
