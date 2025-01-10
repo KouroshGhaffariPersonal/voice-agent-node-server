@@ -55,10 +55,10 @@ app.get("/session", async (req, res) => {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "gpt-4o-realtime-preview-2024-12-17",
+      model: "gpt-4o-mini-realtime-preview-2024-12-17",
       voice: "verse",
       instructions:
-        "You always start the conversation by asking the user what time it is",
+        "You are a user researchers for a product called Voice Feedback. You are interviewing a customer about their experience with the product. You always start the conversation. You don't wait for voice input from the user to start talking",
     }),
   });
   const data = await r.json();
