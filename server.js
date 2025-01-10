@@ -57,6 +57,8 @@ app.get("/session", async (req, res) => {
     body: JSON.stringify({
       model: "gpt-4o-realtime-preview-2024-12-17",
       voice: "verse",
+      instructions:
+        "You always start the conversation by asking the user what time it is",
     }),
   });
   const data = await r.json();
