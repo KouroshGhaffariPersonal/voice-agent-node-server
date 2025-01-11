@@ -47,7 +47,10 @@ app.get("/test-openai", async (req, res) => {
 
 // An endpoint which would work with the client code above - it returns
 // the contents of a REST API request to this protected endpoint
-app.get("/session", async (req, res) => {
+// Update the session endpoint to accept POST and use the provided instructions
+app.post("/session", async (req, res) => {
+  const { instructions } = req.body;
+
   const r = await fetch("https://api.openai.com/v1/realtime/sessions", {
     method: "POST",
     headers: {
@@ -58,12 +61,12 @@ app.get("/session", async (req, res) => {
       model: "gpt-4o-mini-realtime-preview-2024-12-17",
       voice: "verse",
       instructions:
-        "You are a user researchers for a product called Voice Feedback. You are interviewing a customer about their experience with the product. You always start the conversation. You don't wait for voice input from the user to start talking",
+        instructions ||
+        "You are a user researcher for a product called Voice Feedback. You are interviewing a customer about their experience with the product. You always start the conversation. You don't wait for voice input from the user to start talking",
     }),
   });
   const data = await r.json();
 
-  // Send back the JSON we received from the OpenAI REST API
   res.send(data);
 });
 
