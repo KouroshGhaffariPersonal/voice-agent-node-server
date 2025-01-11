@@ -2,6 +2,30 @@ const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
 const multer = require("multer");
+const mongoose = require("mongoose");
+
+// MongoDB Connection
+mongoose
+  .connect(process.env.MONGODB_URI, {
+    dbName: "voicefeedback", // Separate database name for this application
+  })
+  .then(() => console.log("Connected to MongoDB"))
+  .catch((err) => console.error("MongoDB connection error:", err));
+
+// Agent Schema
+const agentSchema = new mongoose.Schema({
+  instructions: {
+    type: String,
+    required: true,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+});
+
+const Agent = mongoose.model("Agent", agentSchema);
+
 //OPEN AI CONNECTION
 const OpenAI = require("openai");
 const openai = new OpenAI({
@@ -68,6 +92,64 @@ app.post("/session", async (req, res) => {
   const data = await r.json();
 
   res.send(data);
+});
+
+// New endpoints for agent management
+app.post("/create-agent", async (req, res) => {
+  try {
+    const { instructions } = req.body;
+    if (!instructions) {
+      return res.status(400).json({
+        status: "error",
+        message: "Instructions are required",
+      });
+    }
+
+    const agent = new Agent({ instructions });
+    await agent.save();
+
+    res.status(201).json({
+      status: "success",
+      data: {
+        id: agent._id,
+        instructions: agent.instructions,
+        createdAt: agent.createdAt,
+      },
+    });
+  } catch (error) {
+    console.error("Database Error:", error);
+    res.status(500).json({
+      status: "error",
+      message: "Error creating agent",
+    });
+  }
+});
+
+app.get("/agent/:id", async (req, res) => {
+  try {
+    const agent = await Agent.findById(req.params.id);
+    if (!agent) {
+      return res.status(404).json({
+        status: "error",
+        message: "Agent not found",
+      });
+    }
+
+    res.json({
+      status: "success",
+      data: {
+        id: agent._id,
+        instructions: agent.instructions,
+        createdAt: agent.createdAt,
+      },
+    });
+  } catch (error) {
+    console.error("Database Error:", error);
+    res.status(500).json({
+      status: "error",
+      message: "Error retrieving agent",
+    });
+  }
 });
 
 // Start server
