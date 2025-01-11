@@ -45,30 +45,6 @@ app.get("/", (req, res) => {
   res.json({ status: "ok", message: "Voice Feedback API is running" });
 });
 
-app.get("/test-openai", async (req, res) => {
-  try {
-    if (!process.env.OPENAI_API_KEY) {
-      throw new Error("OpenAI API key is not configured");
-    }
-
-    const completion = await openai.chat.completions.create({
-      messages: [{ role: "system", content: "Hello! This is a test." }],
-      model: "gpt-3.5-turbo",
-    });
-
-    res.json({
-      status: "success",
-      data: completion.choices[0].message,
-    });
-  } catch (error) {
-    console.error("OpenAI Error:", error);
-    res.status(500).json({
-      status: "error",
-      message: error.message || "Error communicating with OpenAI",
-    });
-  }
-});
-
 // An endpoint which would work with the client code above - it returns
 // the contents of a REST API request to this protected endpoint
 // Update the session endpoint to accept POST and use the provided instructions
@@ -84,6 +60,10 @@ app.post("/session", async (req, res) => {
     body: JSON.stringify({
       model: "gpt-4o-mini-realtime-preview-2024-12-17",
       voice: "verse",
+      modalities: ["text", "audio"],
+      input_audio_transcription: {
+        model: "whisper-1",
+      },
       instructions:
         `You are a researcher with the task of getting the user to talk about ${instructions}. You always start the conversation. You don't wait for voice input from the user to start talking.` ||
         "You are a user researcher for a product called Voice Feedback. You are interviewing a customer about their experience with the product. You don't wait for voice input from the user to start talking",
