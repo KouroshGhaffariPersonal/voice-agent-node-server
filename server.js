@@ -61,7 +61,7 @@ app.post("/session", async (req, res) => {
       model: "gpt-4o-mini-realtime-preview-2024-12-17",
       voice: "verse",
       instructions:
-        instructions ||
+        `You are a researcher with the task of getting the user to talk about ${instructions}. You always start the conversation. You don't wait for voice input from the user to start talking.` ||
         "You are a user researcher for a product called Voice Feedback. You are interviewing a customer about their experience with the product. You always start the conversation. You don't wait for voice input from the user to start talking",
     }),
   });
