@@ -42,7 +42,7 @@ const conversationSchema = new mongoose.Schema({
   messages: [
     {
       content: String,
-      speaker: String, // 'agent' or 'user'
+      speaker: String,
       timestamp: {
         type: Date,
         default: Date.now,
@@ -51,7 +51,7 @@ const conversationSchema = new mongoose.Schema({
   ],
 });
 
-// Create the index for conversationId
+// Update the index to use conversationId instead of sessionId
 conversationSchema.index({ conversationId: 1 }, { unique: true });
 
 const Conversation = mongoose.model("Conversation", conversationSchema);
@@ -168,7 +168,6 @@ app.post("/conversation", async (req, res) => {
   try {
     const { agentId } = req.body;
 
-    // Validate agentId is provided
     if (!agentId) {
       return res.status(400).json({
         status: "error",
@@ -176,7 +175,6 @@ app.post("/conversation", async (req, res) => {
       });
     }
 
-    // Validate agentId exists in database
     const agent = await Agent.findById(agentId);
     if (!agent) {
       return res.status(404).json({
@@ -185,11 +183,15 @@ app.post("/conversation", async (req, res) => {
       });
     }
 
+    // Generate a new unique conversationId using UUID or similar
+    const conversationId = new mongoose.Types.ObjectId().toString();
+
     const conversation = new Conversation({
       agentId,
-      conversationId: new mongoose.Types.ObjectId().toString(),
+      conversationId,
       messages: [],
     });
+
     await conversation.save();
 
     res.status(201).json({
@@ -199,7 +201,7 @@ app.post("/conversation", async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Conversation creation error:", error); // Add logging
+    console.error("Conversation creation error:", error);
     res.status(500).json({
       status: "error",
       message: "Failed to create conversation",
