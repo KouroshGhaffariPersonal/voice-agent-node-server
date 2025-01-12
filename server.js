@@ -163,12 +163,31 @@ app.get("/agent/:id", async (req, res) => {
 app.post("/conversation", async (req, res) => {
   try {
     const { agentId } = req.body;
+
+    // Validate agentId is provided
+    if (!agentId) {
+      return res.status(400).json({
+        status: "error",
+        message: "agentId is required",
+      });
+    }
+
+    // Validate agentId exists in database
+    const agent = await Agent.findById(agentId);
+    if (!agent) {
+      return res.status(404).json({
+        status: "error",
+        message: "Agent not found",
+      });
+    }
+
     const conversation = new Conversation({
       agentId,
       conversationId: new mongoose.Types.ObjectId().toString(),
       messages: [],
     });
     await conversation.save();
+
     res.status(201).json({
       status: "success",
       data: {
@@ -176,7 +195,12 @@ app.post("/conversation", async (req, res) => {
       },
     });
   } catch (error) {
-    res.status(500).json({ status: "error", message: error.message });
+    console.error("Conversation creation error:", error); // Add logging
+    res.status(500).json({
+      status: "error",
+      message: "Failed to create conversation",
+      details: error.message,
+    });
   }
 });
 
