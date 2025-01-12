@@ -26,38 +26,28 @@ const agentSchema = new mongoose.Schema({
 
 const Agent = mongoose.model("Agent", agentSchema);
 
-//Conversation Schema
-const messageSchema = new mongoose.Schema({
-  content: String,
-  speaker: String, // 'agent' or 'user'
-  timestamp: {
-    type: Date,
-    default: Date.now,
-  },
-});
-
+//Conversation schema
+// Add this near your other schemas
 const conversationSchema = new mongoose.Schema({
   agentId: {
     type: mongoose.Schema.Types.ObjectId,
+    required: true,
     ref: "Agent",
-    required: true,
   },
-  sessionId: {
+  conversationId: {
     type: String,
     required: true,
-    unique: true,
-  }, // Unique identifier for each conversation session
-  messages: [messageSchema],
-  startTime: {
-    type: Date,
-    default: Date.now,
   },
-  endTime: Date,
-  status: {
-    type: String,
-    enum: ["active", "completed"],
-    default: "active",
-  },
+  messages: [
+    {
+      content: String,
+      speaker: String, // 'agent' or 'user'
+      timestamp: {
+        type: Date,
+        default: Date.now,
+      },
+    },
+  ],
 });
 
 const Conversation = mongoose.model("Conversation", conversationSchema);
@@ -168,60 +158,51 @@ app.get("/agent/:id", async (req, res) => {
   }
 });
 
-//endpoints for saving conversation
-// Create new conversation
+//conversation endpoitns
+// Add these new endpoints
 app.post("/conversation", async (req, res) => {
   try {
     const { agentId } = req.body;
-
-    // Generate a unique session ID
-    const sessionId = `${agentId}-${Date.now()}-${Math.random()
-      .toString(36)
-      .substr(2, 9)}`;
-
     const conversation = new Conversation({
       agentId,
-      sessionId,
+      conversationId: new mongoose.Types.ObjectId().toString(),
       messages: [],
     });
     await conversation.save();
-
     res.status(201).json({
       status: "success",
       data: {
-        conversationId: conversation._id,
-        sessionId: sessionId,
+        conversationId: conversation.conversationId,
       },
     });
   } catch (error) {
-    console.error("Error creating conversation:", error);
-    res.status(500).json({
-      status: "error",
-      message: "Error creating conversation",
-    });
+    res.status(500).json({ status: "error", message: error.message });
   }
 });
 
-// Add endpoint to get all conversations for an agent
-app.get("/agent/:agentId/conversations", async (req, res) => {
+app.post("/conversation/:conversationId/message", async (req, res) => {
   try {
-    const conversations = await Conversation.find({
-      agentId: req.params.agentId,
-    }).sort({ startTime: -1 }); // Most recent first
+    const { content, speaker } = req.body;
+    const { conversationId } = req.params;
 
-    res.json({
-      status: "success",
-      data: conversations,
-    });
+    await Conversation.findOneAndUpdate(
+      { conversationId },
+      {
+        $push: {
+          messages: {
+            content,
+            speaker,
+            timestamp: new Date(),
+          },
+        },
+      }
+    );
+
+    res.status(200).json({ status: "success" });
   } catch (error) {
-    console.error("Error fetching conversations:", error);
-    res.status(500).json({
-      status: "error",
-      message: "Error fetching conversations",
-    });
+    res.status(500).json({ status: "error", message: error.message });
   }
 });
-
 // Start server
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
