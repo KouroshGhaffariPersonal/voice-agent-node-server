@@ -26,6 +26,42 @@ const agentSchema = new mongoose.Schema({
 
 const Agent = mongoose.model("Agent", agentSchema);
 
+//Conversation Schema
+const messageSchema = new mongoose.Schema({
+  content: String,
+  speaker: String, // 'agent' or 'user'
+  timestamp: {
+    type: Date,
+    default: Date.now,
+  },
+});
+
+const conversationSchema = new mongoose.Schema({
+  agentId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Agent",
+    required: true,
+  },
+  sessionId: {
+    type: String,
+    required: true,
+    unique: true,
+  }, // Unique identifier for each conversation session
+  messages: [messageSchema],
+  startTime: {
+    type: Date,
+    default: Date.now,
+  },
+  endTime: Date,
+  status: {
+    type: String,
+    enum: ["active", "completed"],
+    default: "active",
+  },
+});
+
+const Conversation = mongoose.model("Conversation", conversationSchema);
+
 //OPEN AI CONNECTION
 const OpenAI = require("openai");
 const openai = new OpenAI({
@@ -128,6 +164,60 @@ app.get("/agent/:id", async (req, res) => {
     res.status(500).json({
       status: "error",
       message: "Error retrieving agent",
+    });
+  }
+});
+
+//endpoints for saving conversation
+// Create new conversation
+app.post("/conversation", async (req, res) => {
+  try {
+    const { agentId } = req.body;
+
+    // Generate a unique session ID
+    const sessionId = `${agentId}-${Date.now()}-${Math.random()
+      .toString(36)
+      .substr(2, 9)}`;
+
+    const conversation = new Conversation({
+      agentId,
+      sessionId,
+      messages: [],
+    });
+    await conversation.save();
+
+    res.status(201).json({
+      status: "success",
+      data: {
+        conversationId: conversation._id,
+        sessionId: sessionId,
+      },
+    });
+  } catch (error) {
+    console.error("Error creating conversation:", error);
+    res.status(500).json({
+      status: "error",
+      message: "Error creating conversation",
+    });
+  }
+});
+
+// Add endpoint to get all conversations for an agent
+app.get("/agent/:agentId/conversations", async (req, res) => {
+  try {
+    const conversations = await Conversation.find({
+      agentId: req.params.agentId,
+    }).sort({ startTime: -1 }); // Most recent first
+
+    res.json({
+      status: "success",
+      data: conversations,
+    });
+  } catch (error) {
+    console.error("Error fetching conversations:", error);
+    res.status(500).json({
+      status: "error",
+      message: "Error fetching conversations",
     });
   }
 });
