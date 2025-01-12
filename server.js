@@ -37,6 +37,7 @@ const conversationSchema = new mongoose.Schema({
   conversationId: {
     type: String,
     required: true,
+    unique: true,
   },
   messages: [
     {
@@ -49,6 +50,9 @@ const conversationSchema = new mongoose.Schema({
     },
   ],
 });
+
+// Create the index for conversationId
+conversationSchema.index({ conversationId: 1 }, { unique: true });
 
 const Conversation = mongoose.model("Conversation", conversationSchema);
 
