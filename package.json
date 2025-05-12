@@ -1,6 +1,6 @@
 {
   "name": "voice-agent-node-server",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Interactive voice-based solution for collecting customer feedback through conversational AI.",
   "main": "index.js",
   "scripts": {
